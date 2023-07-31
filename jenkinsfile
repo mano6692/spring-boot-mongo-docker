@@ -1,0 +1,32 @@
+pipeline {
+    agent any
+    stages {
+        stage ('git-checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/mano6692/spring-boot-mongo-docker.git'
+
+            }
+        }
+        stage ('maven-build') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+        stage ('sonarqube-static-code-analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube-server') {
+                    sh 'mvn clean package sonar:sonar'
+                    echo 'Static Analysis Completed' 
+                  }
+            }
+        }
+         stage("Quality gate") {
+            steps {
+                 timeout(time: 1, unit: 'HOURS') {
+                      waitForQualityGate abortPipeline: true
+                 }
+               
+            }
+        }
+    }
+}
